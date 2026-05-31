@@ -1,0 +1,63 @@
+╔══════════════════════════════════════════════════════╗
+║          GooPro — Sbalott Ecosystem                  ║
+║          Plataforma de Clases en Vivo                ║
+╚══════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASO 1 — Instala Node.js (si no lo tienes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Descarga GRATIS desde: https://nodejs.org
+  Elige la version "LTS" e instala normalmente.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASO 2 — Primera instalacion (solo una vez)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Windows → Doble clic en: INSTALAR_WINDOWS.bat
+  Mac     → Doble clic en: INSTALAR_MAC.command
+
+  Esto instala las dependencias y crea un acceso
+  directo en tu Escritorio llamado "GooPro".
+  Tarda 1-2 minutos la primera vez.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASO 3 — Usar GooPro cada vez
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Windows → Doble clic en: INICIAR_WINDOWS.bat
+            (o el acceso del Escritorio: GooPro.bat)
+  Mac     → Doble clic en: INICIAR_MAC.command
+
+  La app se abre sola en el navegador:
+  http://localhost:3000
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  USAR CON ALUMNOS EN LA MISMA RED WiFi
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Los alumnos abren en su navegador:
+  http://[IP-de-tu-PC]:3000
+
+  Para saber tu IP en Windows:
+  1. Presiona Windows + R
+  2. Escribe: cmd
+  3. Escribe: ipconfig
+  4. Busca "Direccion IPv4" (ej: 192.168.1.5)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FUNCIONES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Video y audio real (WebRTC)
+  Compartir pantalla
+  Pizarra colaborativa
+  Chat en vivo
+  Roles: Profesor / Alumno
+  Silenciar / expulsar participantes
+  Levantar la mano
+  Grabacion
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Sbalott Ecosystem 2026
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

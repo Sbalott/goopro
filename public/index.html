@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GooPro — Sbalott Ecosystem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ LOBBY ══════════════════════════════════════════════════════════════ -->
+  <div id="lobby" class="lobby">
+    <div class="lobby-bg">
+      <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+    </div>
+    <div class="lobby-content">
+      <div class="brand">
+        <div class="brand-logo">GP</div>
+        <div>
+          <div class="brand-name">GooPro</div>
+          <div class="brand-sub">Sbalott Ecosystem</div>
+        </div>
+      </div>
+      <div class="lobby-card">
+        <h1>Únete a tu clase</h1>
+        <p>Video en vivo · Pizarra colaborativa · Chat integrado</p>
+
+        <div class="form-row">
+          <label>Tu nombre</label>
+          <input type="text" id="inp-name" placeholder="Nombre completo" maxlength="40"/>
+        </div>
+        <div class="form-row">
+          <label>ID de Sala</label>
+          <div class="room-input-row">
+            <input type="text" id="inp-room" placeholder="sala-123"/>
+            <button class="gen-btn" onclick="genRoomId()" title="Generar ID"><i class="ti ti-refresh"></i></button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Rol</label>
+          <div class="role-grid">
+            <button class="role-card active" id="role-prof" onclick="setRole('profesor',this)">
+              <i class="ti ti-chalkboard"></i><span>Profesor</span><small>Controla la sala</small>
+            </button>
+            <button class="role-card" id="role-alu" onclick="setRole('alumno',this)">
+              <i class="ti ti-user-graduate"></i><span>Alumno</span><small>Participa en clase</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-row">
+          <video id="preview-video" autoplay muted playsinline></video>
+          <div class="preview-controls">
+            <button class="prev-btn" id="prev-mic" onclick="togglePreviewMic()"><i class="ti ti-microphone" id="prev-mic-icon"></i></button>
+            <button class="prev-btn" id="prev-cam" onclick="togglePreviewCam()"><i class="ti ti-video" id="prev-cam-icon"></i></button>
+          </div>
+          <div class="preview-label" id="preview-label">Solicitando cámara...</div>
+        </div>
+
+        <button class="join-btn" onclick="joinRoom()">
+          <i class="ti ti-door-enter"></i> Entrar a la sala
+        </button>
+        <div class="lobby-error" id="lobby-error"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ROOM ═══════════════════════════════════════════════════════════════ -->
+  <div id="room" class="room" style="display:none">
+
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="brand-sm"><span class="brand-sm-logo">GP</span><span class="brand-sm-name">GooPro</span></div>
+        <div class="room-info">
+          <span class="room-id-badge" id="tb-room-id">—</span>
+          <button class="copy-btn" onclick="copyRoomId()" title="Copiar ID"><i class="ti ti-copy"></i></button>
+        </div>
+        <button class="invite-btn" id="invite-btn" onclick="showInviteModal()">
+          <i class="ti ti-link"></i> Invitar
+        </button>
+        <div class="conn-dot" id="conn-dot"></div>
+      </div>
+      <div class="tb-center">
+        <span class="my-name-badge" id="tb-my-name">—</span>
+        <span class="role-badge" id="tb-role-badge">—</span>
+      </div>
+      <div class="tb-right">
+        <div class="rec-pill" id="rec-pill" style="display:none"><span class="rec-dot"></span> REC</div>
+        <div class="participant-count"><i class="ti ti-users"></i> <span id="count-num">0</span></div>
+        <button class="leave-btn" onclick="leaveRoom()"><i class="ti ti-door-exit"></i> Salir</button>
+      </div>
+    </header>
+
+    <div class="room-body">
+      <!-- Main panel -->
+      <div class="main-panel">
+        <div class="main-tabs">
+          <button class="mtab active" onclick="switchMain('video',this)" data-view="video"><i class="ti ti-layout-grid"></i> Video</button>
+          <button class="mtab" onclick="switchMain('wb',this)" data-view="wb"><i class="ti ti-writing"></i> Pizarra</button>
+          <button class="mtab" onclick="switchMain('screen',this)" data-view="screen" id="screen-tab" style="display:none"><i class="ti ti-screen-share"></i> Pantalla</button>
+        </div>
+
+        <!-- VIDEO -->
+        <div id="view-video" class="view-panel">
+          <div id="video-grid" class="video-grid"></div>
+          <div id="empty-state" class="empty-state" style="display:none">
+            <i class="ti ti-video-off"></i><p>Esperando participantes...</p>
+          </div>
+        </div>
+
+        <!-- WHITEBOARD -->
+        <div id="view-wb" class="view-panel" style="display:none">
+          <div class="wb-wrap">
+            <div class="wb-toolbar" id="wb-toolbar">
+              <div class="tb-group">
+                <button class="wbt active" onclick="setWbTool('pen',this)" title="Lápiz"><i class="ti ti-pencil"></i></button>
+                <button class="wbt" onclick="setWbTool('line',this)" title="Línea"><i class="ti ti-minus"></i></button>
+                <button class="wbt" onclick="setWbTool('rect',this)" title="Rectángulo"><i class="ti ti-square"></i></button>
+                <button class="wbt" onclick="setWbTool('circle',this)" title="Círculo"><i class="ti ti-circle"></i></button>
+                <button class="wbt" onclick="setWbTool('text',this)" title="Texto"><i class="ti ti-letter-t"></i></button>
+                <button class="wbt" onclick="setWbTool('erase',this)" title="Borrador"><i class="ti ti-eraser"></i></button>
+              </div>
+              <div class="tb-group tb-colors">
+                <div class="wbc active" style="background:#0ea5e9" data-color="#0ea5e9" onclick="setWbColor(this)"></div>
+                <div class="wbc" style="background:#ef4444" data-color="#ef4444" onclick="setWbColor(this)"></div>
+                <div class="wbc" style="background:#22c55e" data-color="#22c55e" onclick="setWbColor(this)"></div>
+                <div class="wbc" style="background:#f59e0b" data-color="#f59e0b" onclick="setWbColor(this)"></div>
+                <div class="wbc" style="background:#a855f7" data-color="#a855f7" onclick="setWbColor(this)"></div>
+                <div class="wbc" style="background:#ec4899" data-color="#ec4899" onclick="setWbColor(this)"></div>
+                <div class="wbc" style="background:#1e293b" data-color="#1e293b" onclick="setWbColor(this)"></div>
+              </div>
+              <div class="tb-group">
+                <input type="range" min="1" max="24" value="3" id="wb-size-input" oninput="if(wb)wb.setSize(+this.value)"/>
+              </div>
+              <div class="tb-group">
+                <button class="wbt" onclick="undoWB()" title="Deshacer"><i class="ti ti-arrow-back-up"></i></button>
+                <button class="wbt wbt-danger" onclick="clearWB()" title="Limpiar"><i class="ti ti-trash"></i></button>
+              </div>
+            </div>
+            <canvas id="wb-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- SCREEN -->
+        <div id="view-screen" class="view-panel" style="display:none">
+          <div class="screen-container">
+            <video id="screen-video" autoplay playsinline></video>
+            <div class="screen-badge" id="screen-badge">Pantalla compartida</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="side-tabs">
+          <button class="stab active" onclick="switchSide('chat',this)">
+            <i class="ti ti-message"></i> Chat
+            <span class="unread-badge" id="chat-unread" style="display:none">0</span>
+          </button>
+          <button class="stab" onclick="switchSide('people',this)"><i class="ti ti-users"></i> Personas</button>
+          <button class="stab" id="stab-settings" onclick="switchSide('settings',this)" style="display:none"><i class="ti ti-settings"></i></button>
+        </div>
+
+        <div id="side-chat" class="side-panel">
+          <div class="chat-msgs" id="chat-msgs"></div>
+          <div class="chat-footer">
+            <input type="text" id="chat-inp" placeholder="Escribe un mensaje…" maxlength="500"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){sendChat();event.preventDefault()}"/>
+            <button class="chat-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
+          </div>
+        </div>
+
+        <div id="side-people" class="side-panel" style="display:none">
+          <div id="people-list" class="people-list"></div>
+        </div>
+
+        <div id="side-settings" class="side-panel" style="display:none">
+          <div class="settings-list">
+            <div class="setting-item">
+              <div><div class="s-title">Compartir pantalla</div><div class="s-sub">¿Quién puede compartir?</div></div>
+              <select id="cfg-screen" onchange="updateConfig()">
+                <option value="host_only">Solo profesor</option>
+                <option value="all">Todos</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <div><div class="s-title">Pizarra</div><div class="s-sub">¿Quién puede dibujar?</div></div>
+              <select id="cfg-wb" onchange="updateConfig()">
+                <option value="host_only">Solo profesor</option>
+                <option value="all">Todos</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <div><div class="s-title">Chat</div><div class="s-sub">¿Quién puede escribir?</div></div>
+              <select id="cfg-chat" onchange="updateConfig()">
+                <option value="all">Todos</option>
+                <option value="host_only">Solo profesor</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <div><div class="s-title">Silenciar al entrar</div><div class="s-sub">Nuevos participantes</div></div>
+              <label class="toggle">
+                <input type="checkbox" id="cfg-mute" onchange="updateConfig()" checked/>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls bar -->
+    <div class="controls">
+      <button class="ctl active" id="ctl-mic" onclick="toggleMic()">
+        <i class="ti ti-microphone" id="ctl-mic-icon"></i><span>Micro</span>
+      </button>
+      <button class="ctl active" id="ctl-cam" onclick="toggleCam()">
+        <i class="ti ti-video" id="ctl-cam-icon"></i><span>Cámara</span>
+      </button>
+      <button class="ctl" id="ctl-screen" onclick="toggleScreenShare()">
+        <i class="ti ti-screen-share" id="ctl-screen-icon"></i><span id="ctl-screen-label">Pantalla</span>
+      </button>
+      <button class="ctl" id="ctl-hand" onclick="toggleHand()">
+        <i class="ti ti-hand-stop"></i><span id="ctl-hand-label">Mano</span>
+      </button>
+      <div class="ctl-divider"></div>
+      <button class="ctl" id="ctl-rec" onclick="toggleRecording()" style="display:none">
+        <i class="ti ti-record-mail" id="ctl-rec-icon"></i><span id="ctl-rec-label">Grabar</span>
+      </button>
+      <button class="ctl" id="ctl-mute-all" onclick="muteAll()" style="display:none">
+        <i class="ti ti-microphone-off"></i><span>Silenciar todos</span>
+      </button>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <!-- ══ MODAL INVITACIÓN ════════════════════════════════════════════════════ -->
+  <div id="invite-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeInviteModal()">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2><i class="ti ti-link"></i> Invitar a la sala</h2>
+        <button class="modal-close" onclick="closeInviteModal()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Comparte este enlace con tus alumnos para que entren directamente:</p>
+        <div class="invite-link-row">
+          <input type="text" id="invite-link-input" readonly onclick="this.select()"/>
+          <button class="copy-link-btn" onclick="copyInviteLink()">
+            <i class="ti ti-copy"></i> Copiar
+          </button>
+        </div>
+        <div class="invite-qr" id="invite-qr"></div>
+        <div class="invite-info">
+          <i class="ti ti-info-circle"></i>
+          Al abrir el enlace, el alumno llega directamente a la sala <strong id="invite-room-name">—</strong>
+          solo necesita ingresar su nombre.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/webrtc.js"></script>
+<script src="/js/whiteboard.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
