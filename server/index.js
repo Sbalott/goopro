@@ -11,7 +11,8 @@ const io     = new Server(server, {
   transports: ['websocket','polling'],
 });
 
-app.use(express.static(path.join(__dirname, '../public')));
+const PUBLIC = path.join(__dirname, '../public');
+app.use(express.static(PUBLIC));
 app.use(express.json());
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ function getOrCreateRoom(roomId) {
         recording: false,
       },
       chatHistory: [],
-      wbStrokes:   [],
+      wbStrokes: [],
     });
   }
   return rooms.get(roomId);
@@ -49,18 +50,19 @@ function publicRoom(room) {
 }
 
 // ── REST ───────────────────────────────────────────────────────────────────
+app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 app.get('/api/room/:id', (req, res) => {
-  const room = rooms.get(req.params.id);
-  res.json(room ? { exists:true, count:room.participants.size } : { exists:false, count:0 });
+  const r = rooms.get(req.params.id);
+  res.json(r ? { exists: true, count: r.participants.size } : { exists: false, count: 0 });
 });
 
-// Ruta de salud para reverse proxy
-app.get('/health', (_req, res) => res.json({ ok:true, rooms: rooms.size }));
-
-// SPA fallback — todas las rutas sirven el index.html
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
+// ── Rutas principales ──────────────────────────────────────────────────────
+// Raíz → landing page
+app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC, 'landing.html')));
+// /app → sala de videoconferencia
+app.get('/app', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
+// Fallback SPA
+app.get('*', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
 io.on('connection', socket => {
@@ -85,16 +87,16 @@ io.on('connection', socket => {
       participant,
       room: publicRoom(room),
       chatHistory: room.chatHistory.slice(-80),
-      wbStrokes:   room.wbStrokes,
+      wbStrokes: room.wbStrokes,
     });
     socket.to(roomId).emit('participant_joined', { participant });
     console.log(`[${roomId}] +${name} (${role}) | total:${room.participants.size}`);
   });
 
   // WebRTC signaling
-  socket.on('offer',         ({ targetId, sdp })       => io.to(targetId).emit('offer',         { fromId:socket.id, sdp }));
-  socket.on('answer',        ({ targetId, sdp })       => io.to(targetId).emit('answer',        { fromId:socket.id, sdp }));
-  socket.on('ice_candidate', ({ targetId, candidate }) => io.to(targetId).emit('ice_candidate', { fromId:socket.id, candidate }));
+  socket.on('offer',         ({ targetId, sdp })       => io.to(targetId).emit('offer',         { fromId: socket.id, sdp }));
+  socket.on('answer',        ({ targetId, sdp })       => io.to(targetId).emit('answer',        { fromId: socket.id, sdp }));
+  socket.on('ice_candidate', ({ targetId, candidate }) => io.to(targetId).emit('ice_candidate', { fromId: socket.id, candidate }));
 
   // Media state
   socket.on('media_state', ({ mic, cam }) => {
@@ -103,7 +105,7 @@ io.on('connection', socket => {
     if (!p) return;
     if (mic !== undefined) p.mic = mic;
     if (cam !== undefined) p.cam = cam;
-    socket.to(currentRoom).emit('participant_media', { socketId:socket.id, mic:p.mic, cam:p.cam });
+    socket.to(currentRoom).emit('participant_media', { socketId: socket.id, mic: p.mic, cam: p.cam });
   });
 
   // Screen share
@@ -112,10 +114,11 @@ io.on('connection', socket => {
     const room = rooms.get(currentRoom);
     const p = room?.participants.get(socket.id);
     if (!p) return;
-    const allowed = room.config.screenShare === 'all' || p.role === 'profesor';
-    if (!allowed) { socket.emit('error', { msg:'Solo el profesor puede compartir pantalla.' }); return; }
+    if (room.config.screenShare !== 'all' && p.role !== 'profesor') {
+      socket.emit('error', { msg: 'Solo el profesor puede compartir pantalla.' }); return;
+    }
     p.screenSharing = active;
-    io.to(currentRoom).emit('screen_share_change', { socketId:socket.id, active, name:p.name });
+    io.to(currentRoom).emit('screen_share_change', { socketId: socket.id, active, name: p.name });
   });
 
   // Hand raise
@@ -124,7 +127,7 @@ io.on('connection', socket => {
     const p = rooms.get(currentRoom)?.participants.get(socket.id);
     if (!p) return;
     p.hand = raised;
-    io.to(currentRoom).emit('hand_change', { socketId:socket.id, name:p.name, raised });
+    io.to(currentRoom).emit('hand_change', { socketId: socket.id, name: p.name, raised });
   });
 
   // Chat
@@ -133,9 +136,10 @@ io.on('connection', socket => {
     const room = rooms.get(currentRoom);
     const p = room?.participants.get(socket.id);
     if (!p) return;
-    const allowed = room.config.chat === 'all' || p.role === 'profesor';
-    if (!allowed) { socket.emit('error', { msg:'El chat está restringido.' }); return; }
-    const msg = { id:uuidv4(), sender:p.name, role:p.role, text:text.trim(), time:Date.now() };
+    if (room.config.chat !== 'all' && p.role !== 'profesor') {
+      socket.emit('error', { msg: 'El chat está restringido.' }); return;
+    }
+    const msg = { id: uuidv4(), sender: p.name, role: p.role, text: text.trim(), time: Date.now() };
     room.chatHistory.push(msg);
     if (room.chatHistory.length > 200) room.chatHistory.shift();
     io.to(currentRoom).emit('chat_message', msg);
@@ -147,8 +151,9 @@ io.on('connection', socket => {
     const room = rooms.get(currentRoom);
     const p = room?.participants.get(socket.id);
     if (!p) return;
-    const allowed = room.config.whiteboard === 'all' || p.role === 'profesor';
-    if (!allowed) { socket.emit('error', { msg:'Solo el profesor puede dibujar.' }); return; }
+    if (room.config.whiteboard !== 'all' && p.role !== 'profesor') {
+      socket.emit('error', { msg: 'Solo el profesor puede dibujar.' }); return;
+    }
     room.wbStrokes.push(stroke);
     if (room.wbStrokes.length > 2000) room.wbStrokes = room.wbStrokes.slice(-1500);
     socket.to(currentRoom).emit('wb_stroke', stroke);
@@ -172,7 +177,7 @@ io.on('connection', socket => {
     if (!target) return;
     target.mic = false;
     io.to(targetSocketId).emit('force_mute');
-    io.to(currentRoom).emit('participant_media', { socketId:targetSocketId, mic:false, cam:target.cam });
+    io.to(currentRoom).emit('participant_media', { socketId: targetSocketId, mic: false, cam: target.cam });
   });
 
   socket.on('kick_participant', ({ targetSocketId }) => {
@@ -222,17 +227,17 @@ io.on('connection', socket => {
     const p = room.participants.get(socket.id);
     room.participants.delete(socket.id);
     if (p) {
-      io.to(currentRoom).emit('participant_left', { socketId:socket.id, name:p.name });
+      io.to(currentRoom).emit('participant_left', { socketId: socket.id, name: p.name });
       console.log(`[${currentRoom}] -${p.name} | remaining:${room.participants.size}`);
     }
-    if (room.participants.size === 0) { rooms.delete(currentRoom); }
+    if (room.participants.size === 0) rooms.delete(currentRoom);
   });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 GooPro — Sbalott Ecosystem`);
-  console.log(`   Local:   http://localhost:${PORT}`);
-  console.log(`   Network: http://0.0.0.0:${PORT}`);
-  console.log(`   Health:  http://localhost:${PORT}/health\n`);
+  console.log(`   http://localhost:${PORT}          → Landing`);
+  console.log(`   http://localhost:${PORT}/app      → Sala de clase`);
+  console.log(`   http://localhost:${PORT}/health   → Estado\n`);
 });
